@@ -1,3 +1,4 @@
+#pylint: disable=missing-module-docstring
 import io
 import streamlit as st
 import pandas as pd
