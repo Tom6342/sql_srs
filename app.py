@@ -23,8 +23,17 @@ answer = """
 SELECT * FROM beverages
 CROSS JOIN food_items
 """
-
 solution = db.sql(answer).df()
+
+with st.sidebar:
+    option = st.selectbox(
+     "What would you like to review ?",
+     ("Joins","GroupBy", "Windows Functions"),
+     index=None,
+     placeholder="Select a theme..",
+    )
+
+    st.write("You selected:", option )
 
 st.header("Enter your code")
 query = st.text_area(label="Votre code SQL ici", key="user_input")
