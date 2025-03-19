@@ -1,4 +1,5 @@
 # pylint: disable=missing-module-docstring
+import ast
 import io
 
 import duckdb as db
@@ -25,9 +26,10 @@ with st.sidebar:
 st.header("Enter your code")
 query = st.text_area(label="Votre code SQL ici", key="user_input")
 
-#if query:
-#    result = db.sql(query).df()
-#    st.dataframe(result)
+if query:
+    result = con.execute(query).df()
+    #result = db.sql(query).df()
+    st.dataframe(result)
 
     # comparaison nombre de colonnes
 
@@ -46,15 +48,14 @@ query = st.text_area(label="Votre code SQL ici", key="user_input")
 #       )
 
 
-#tab1, tab2 = st.tabs(["Tables", "Solution"])
+tab1, tab2 = st.tabs(["Tables", "Solution"])
 
-#with tab1:
-#    st.write("Table: beverages")
-#    st.dataframe(beverages)
-#    st.write("Table: food_items")
-#    st.dataframe(food_items)
-#    st.write("expected:")
-#    st.dataframe(solution_df)
+with tab1:
+    exercise_tables=ast.literal_eval(exercise.loc[0, "tables"])
+    for table in exercise_tables:
+        st.write(f"Table: {table}")
+        df_table = con.execute(f"SELECT * from {table}").df()
+        st.dataframe(df_table)
 
 #with tab2:
 #    st.write(ANSWER_STR)
