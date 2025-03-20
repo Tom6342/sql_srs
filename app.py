@@ -57,5 +57,8 @@ with tab1:
         df_table = con.execute(f"SELECT * from {table}").df()
         st.dataframe(df_table)
 
-#with tab2:
-#    st.write(ANSWER_STR)
+with tab2:
+    exercise_name=exercise.loc[0, "exercise_name"]
+    with open(f"answers/{exercise_name}.sql","r")as f:
+        answer = f.read()
+    st.write(answer)
