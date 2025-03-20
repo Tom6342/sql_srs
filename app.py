@@ -69,3 +69,5 @@ with tab2:
     with open(f"answers/{exercise_name}.sql","r")as f:
         answer = f.read()
     st.write(answer)
+
+con.close()
