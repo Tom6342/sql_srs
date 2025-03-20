@@ -1,75 +1,71 @@
 # pylint: disable=missing-module-docstring
-import io
-
+import ast
+import os
+import logging
 import duckdb as db
 import pandas as pd
 import streamlit as st
 
-CSV = """
-beverage,price
-orange juice,2.5
-Expresso,2
-Tea,3
-"""
-beverages = pd.read_csv(io.StringIO(CSV))
+if "data" not in os.listdir():
+    logging.debug(os.listdir())
+    logging.debug("creating folder data")
+    os.mkdir("data")
 
-CSV2 = """
-food_item,food_price
-cookie juice,2.5
-chocolatine,2
-muffin,3
-"""
-food_items = pd.read_csv(io.StringIO(CSV2))
+if "exercises_sql_tables.duckdb" not in os.listdir("data"):
+    exec(open("init_db.py").read())
 
-ANSWER_STR = """
-SELECT * FROM beverages
-CROSS JOIN food_items
-"""
-solution_df = db.sql(ANSWER_STR).df()
+con = db.connect(database="data/exercises_sql_tables.duckdb",read_only=False)
 
 with st.sidebar:
-    option = st.selectbox(
+    theme = st.selectbox(
         "What would you like to review ?",
-        ("Joins", "GroupBy", "Windows Functions"),
+        ("cross_joins", "GroupBy", "window_functions"),
         index=None,
         placeholder="Select a theme..",
     )
 
-    st.write("You selected:", option)
+    st.write("You selected:", theme)
+    exercise  = con.execute(f"SELECT * from memory_state WHERE theme='{theme}'").df().sort_values("last_reviewed").reset_index()
+    st.write(exercise)
+
+    #on recupere la solution de l exercice
+    exercise_name = exercise.loc[0, "exercise_name"]
+    with open(f"answers/{exercise_name}.sql", "r") as f:
+        answer = f.read()
+    solution_df = con.execute(answer).df()
+
 
 st.header("Enter your code")
 query = st.text_area(label="Votre code SQL ici", key="user_input")
 
 if query:
-    result = db.sql(query).df()
+    result = con.execute(query).df()
     st.dataframe(result)
 
     # comparaison nombre de colonnes
-
     try:
         result = result[solution_df.columns]
-        st.write("Some columns are missing")
+        st.dataframe(result.compare(solution_df))
     except KeyError as e:
         st.write("Some columns are missing")
 
-    # comparaison nombre de lignes
+        # comparaison nombre de lignes
     n_lines_difference = result.shape[0] - solution_df.shape[0]
-
     if n_lines_difference != 0:
-        st.write(
-            f"result has a {n_lines_difference} lines difference with the solution_df"
-        )
+      st.write(
+           f"result has a {n_lines_difference} lines difference with the solution_df"
+       )
 
 
 tab1, tab2 = st.tabs(["Tables", "Solution"])
 
 with tab1:
-    st.write("Table: beverages")
-    st.dataframe(beverages)
-    st.write("Table: food_items")
-    st.dataframe(food_items)
-    st.write("expected:")
-    st.dataframe(solution_df)
+    exercise_tables=exercise.loc[0, "tables"]
+
+    for table in exercise_tables:
+        st.write(f"Table: {table}")
+        df_table = con.execute(f"SELECT * from {table}").df()
+        st.dataframe(df_table)
 
 with tab2:
-    st.write(ANSWER_STR)
+    st.write(answer)
