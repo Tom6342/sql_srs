@@ -17,22 +17,35 @@ if "exercises_sql_tables.duckdb" not in os.listdir("data"):
 con = db.connect(database="data/exercises_sql_tables.duckdb",read_only=False)
 
 with st.sidebar:
+    list_themes = con.execute("SELECT DISTINCT theme from memory_state").df()
+
     theme = st.selectbox(
         "What would you like to review ?",
-        ("cross_joins", "GroupBy", "window_functions"),
+        list_themes["theme"].unique(),
+       # ("cross_joins", "GroupBy", "window_functions"),
         index=None,
         placeholder="Select a theme..",
     )
+    if theme:
+        st.write("You selected:", theme)
+        select_exercise_query = f"SELECT * from memory_state WHERE theme='{theme}'"
+    else:
+        select_exercise_query = "SELECT * from memory_state"
 
-    st.write("You selected:", theme)
-    exercise  = con.execute(f"SELECT * from memory_state WHERE theme='{theme}'").df().sort_values("last_reviewed").reset_index()
+    exercise = (
+        con.execute(select_exercise_query)
+        .df()
+        .sort_values("last_reviewed")
+        .reset_index(drop=True)
+    )
+
     st.write(exercise)
-
     #on recupere la solution de l exercice
     exercise_name = exercise.loc[0, "exercise_name"]
     with open(f"answers/{exercise_name}.sql", "r") as f:
         answer = f.read()
     solution_df = con.execute(answer).df()
+
 
 
 st.header("Enter your code")
@@ -57,11 +70,11 @@ if query:
        )
 
 
+
 tab1, tab2 = st.tabs(["Tables", "Solution"])
 
 with tab1:
     exercise_tables=exercise.loc[0, "tables"]
-
     for table in exercise_tables:
         st.write(f"Table: {table}")
         df_table = con.execute(f"SELECT * from {table}").df()
